@@ -24,6 +24,7 @@ class ParserJSON {
     private static final String KEY_LATEST_VERSION_CODE = "latestVersionCode";
     private static final String KEY_RELEASE_NOTES = "releaseNotes";
     private static final String KEY_URL = "url";
+    private static final String KEY_FORCE_UPGRADE = "forceUpgrade";
 
     public ParserJSON(String url) {
         try {
@@ -34,7 +35,7 @@ class ParserJSON {
 
     }
 
-    public Update parse(){
+    public Update parse() {
 
         try {
             JSONObject json = readJsonFromUrl();
@@ -53,6 +54,9 @@ class ParserJSON {
             }
             URL url = new URL(json.getString(KEY_URL).trim());
             update.setUrlToDownload(url);
+            if (json.has(KEY_FORCE_UPGRADE)) {
+                update.setForceUpgrade(json.getBoolean(KEY_FORCE_UPGRADE));
+            }
             return update;
         } catch (IOException e) {
             Log.e("AppUpdater", "The server is down or there isn't an active Internet connection.", e);

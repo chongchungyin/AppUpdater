@@ -38,6 +38,7 @@ public class AppUpdater implements IAppUpdater {
     private AlertDialog alertDialog;
     private Snackbar snackbar;
     private Boolean isDialogCancelable;
+    private UpdateLibraryListener updateLibraryListener;
 
     public AppUpdater(Context context) {
         this.context = context;
@@ -73,6 +74,12 @@ public class AppUpdater implements IAppUpdater {
     @Override
     public AppUpdater setDuration(Duration duration) {
         this.duration = duration;
+        return this;
+    }
+
+    @Override
+    public AppUpdater setUpdateLibraryListener(UpdateLibraryListener updateLibraryListener) {
+        this.updateLibraryListener = updateLibraryListener;
         return this;
     }
 
@@ -327,6 +334,9 @@ public class AppUpdater implements IAppUpdater {
 
     @Override
     public void start() {
+        if (updateLibraryListener != null) {
+            updateLibraryListener.onStart();
+        }
         latestAppVersion = new UtilsAsync.LatestAppVersion(context, false, updateFrom, gitHub, xmlOrJsonUrl, new LibraryListener() {
             @Override
             public void onSuccess(Update update) {
@@ -334,49 +344,18 @@ public class AppUpdater implements IAppUpdater {
                     return;
                 }
 
-                Update installedUpdate = new Update(UtilsLibrary.getAppInstalledVersion(context), UtilsLibrary.getAppInstalledVersionCode(context));
-                if (UtilsLibrary.isUpdateAvailable(installedUpdate, update)) {
-                    Integer successfulChecks = libraryPreferences.getSuccessfulChecks();
-                    if (UtilsLibrary.isAbleToShow(successfulChecks, showEvery)) {
-                        switch (display) {
-                            case DIALOG:
-                                final DialogInterface.OnClickListener updateClickListener = btnUpdateClickListener == null ? new UpdateClickListener(context, updateFrom, update.getUrlToDownload()) : btnUpdateClickListener;
-                                final DialogInterface.OnClickListener disableClickListener = btnDisableClickListener == null ? new DisableClickListener(context) : btnDisableClickListener;
+                processUpdateResult(update);
 
-                                alertDialog = UtilsDisplay.showUpdateAvailableDialog(context, titleUpdate, getDescriptionUpdate(context, update, Display.DIALOG), btnDismiss, btnUpdate, btnDisable, updateClickListener, btnDismissClickListener, disableClickListener);
-                                alertDialog.setCancelable(isDialogCancelable);
-                                alertDialog.show();
-                                break;
-                            case SNACKBAR:
-                                snackbar = UtilsDisplay.showUpdateAvailableSnackbar(context, getDescriptionUpdate(context, update, Display.SNACKBAR), UtilsLibrary.getDurationEnumToBoolean(duration), updateFrom, update.getUrlToDownload());
-                                snackbar.show();
-                                break;
-                            case NOTIFICATION:
-                                UtilsDisplay.showUpdateAvailableNotification(context, titleUpdate, getDescriptionUpdate(context, update, Display.NOTIFICATION), updateFrom, update.getUrlToDownload(), iconResId);
-                                break;
-                        }
-                    }
-                    libraryPreferences.setSuccessfulChecks(successfulChecks + 1);
-                } else if (showAppUpdated) {
-                    switch (display) {
-                        case DIALOG:
-                            alertDialog = UtilsDisplay.showUpdateNotAvailableDialog(context, titleNoUpdate, getDescriptionNoUpdate(context));
-                            alertDialog.setCancelable(isDialogCancelable);
-                            alertDialog.show();
-                            break;
-                        case SNACKBAR:
-                            snackbar = UtilsDisplay.showUpdateNotAvailableSnackbar(context, getDescriptionNoUpdate(context), UtilsLibrary.getDurationEnumToBoolean(duration));
-                            snackbar.show();
-                            break;
-                        case NOTIFICATION:
-                            UtilsDisplay.showUpdateNotAvailableNotification(context, titleNoUpdate, getDescriptionNoUpdate(context), iconResId);
-                            break;
-                    }
+                if (updateLibraryListener != null) {
+                    updateLibraryListener.onFinished();
                 }
             }
 
             @Override
             public void onFailed(AppUpdaterError error) {
+                if (updateLibraryListener != null) {
+                    updateLibraryListener.onFinished();
+                }
                 if (error == AppUpdaterError.UPDATE_VARIES_BY_DEVICE) {
                     Log.e("AppUpdater", "UpdateFrom.GOOGLE_PLAY isn't valid: update varies by device.");
                 } else if (error == AppUpdaterError.GITHUB_USER_REPO_INVALID) {
@@ -406,6 +385,72 @@ public class AppUpdater implements IAppUpdater {
         }
         if (snackbar != null && snackbar.isShown()) {
             snackbar.dismiss();
+        }
+    }
+
+    @Override
+    public boolean isLocalUpdateAvailable() {
+        return !UtilsCacheManager.isUpdateResultCacheExpired();
+    }
+
+    @Override
+    public boolean startLocal() {
+        Update lastSyncUpdateResult = UtilsCacheManager.getLastSyncUpdateResult();
+        if (lastSyncUpdateResult != null) {
+            processUpdateResult(lastSyncUpdateResult);
+            return true;
+        }
+        return false;
+    }
+
+    private void processUpdateResult(@NonNull Update update) {
+        Update installedUpdate = new Update(UtilsLibrary.getAppInstalledVersion(context), UtilsLibrary.getAppInstalledVersionCode(context));
+        if (UtilsLibrary.isUpdateAvailable(installedUpdate, update)) {
+            Integer successfulChecks = libraryPreferences.getSuccessfulChecks();
+            if (UtilsLibrary.isAbleToShow(successfulChecks, showEvery)) {
+                switch (display) {
+                    case DIALOG:
+                        if (update.getForceUpgrade() == null || update.getForceUpgrade()) {
+                            final DialogInterface.OnClickListener updateClickListener = btnUpdateClickListener == null ? new UpdateClickListener(context, updateFrom, update.getUrlToDownload()) : btnUpdateClickListener;
+                            alertDialog = UtilsDisplay.showUpdateAvailableDialogForceUpgrade(context, titleUpdate, getDescriptionUpdate(context, update, Display.DIALOG), btnUpdate, updateClickListener);
+                            alertDialog.setCancelable(false);
+                            alertDialog.setCanceledOnTouchOutside(false);
+                            alertDialog.show();
+                        } else {
+                            final DialogInterface.OnClickListener updateClickListener = btnUpdateClickListener == null ? new UpdateClickListener(context, updateFrom, update.getUrlToDownload()) : btnUpdateClickListener;
+                            final DialogInterface.OnClickListener disableClickListener = btnDisableClickListener == null ? new DisableClickListener(context) : btnDisableClickListener;
+
+                            alertDialog = UtilsDisplay.showUpdateAvailableDialog(context, titleUpdate, getDescriptionUpdate(context, update, Display.DIALOG), btnDismiss, btnUpdate, btnDisable, updateClickListener, btnDismissClickListener, disableClickListener);
+                            alertDialog.setCancelable(isDialogCancelable);
+                            alertDialog.show();
+                        }
+
+                        break;
+                    case SNACKBAR:
+                        snackbar = UtilsDisplay.showUpdateAvailableSnackbar(context, getDescriptionUpdate(context, update, Display.SNACKBAR), UtilsLibrary.getDurationEnumToBoolean(duration), updateFrom, update.getUrlToDownload());
+                        snackbar.show();
+                        break;
+                    case NOTIFICATION:
+                        UtilsDisplay.showUpdateAvailableNotification(context, titleUpdate, getDescriptionUpdate(context, update, Display.NOTIFICATION), updateFrom, update.getUrlToDownload(), iconResId);
+                        break;
+                }
+            }
+            libraryPreferences.setSuccessfulChecks(successfulChecks + 1);
+        } else if (showAppUpdated) {
+            switch (display) {
+                case DIALOG:
+                    alertDialog = UtilsDisplay.showUpdateNotAvailableDialog(context, titleNoUpdate, getDescriptionNoUpdate(context));
+                    alertDialog.setCancelable(isDialogCancelable);
+                    alertDialog.show();
+                    break;
+                case SNACKBAR:
+                    snackbar = UtilsDisplay.showUpdateNotAvailableSnackbar(context, getDescriptionNoUpdate(context), UtilsLibrary.getDurationEnumToBoolean(duration));
+                    snackbar.show();
+                    break;
+                case NOTIFICATION:
+                    UtilsDisplay.showUpdateNotAvailableNotification(context, titleNoUpdate, getDescriptionNoUpdate(context), iconResId);
+                    break;
+            }
         }
     }
 

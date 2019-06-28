@@ -18,6 +18,13 @@ import java.net.URL;
 
 class UtilsDisplay {
 
+    static AlertDialog showUpdateAvailableDialogForceUpgrade(final Context context, String title, String content, String btnPositive, final DialogInterface.OnClickListener updateClickListener) {
+        return new AlertDialog.Builder(context)
+                .setTitle(title)
+                .setMessage(content)
+                .setPositiveButton(btnPositive, updateClickListener).create();
+    }
+
     static AlertDialog showUpdateAvailableDialog(final Context context, String title, String content, String btnNegative, String btnPositive, String btnNeutral, final DialogInterface.OnClickListener updateClickListener, final DialogInterface.OnClickListener dismissClickListener, final DialogInterface.OnClickListener disableClickListener) {
         return new AlertDialog.Builder(context)
                 .setTitle(title)
@@ -33,7 +40,8 @@ class UtilsDisplay {
                 .setMessage(content)
                 .setPositiveButton(context.getResources().getString(android.R.string.ok), new DialogInterface.OnClickListener() {
                     @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {}
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                    }
                 })
                 .create();
     }

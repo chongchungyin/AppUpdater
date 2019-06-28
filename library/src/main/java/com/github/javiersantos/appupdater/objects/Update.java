@@ -7,6 +7,7 @@ public class Update {
     private Integer versionCode;
     private String releaseNotes;
     private URL apk;
+    private Boolean forceUpgrade;
 
     public Update() {}
 
@@ -61,5 +62,13 @@ public class Update {
 
     public void setUrlToDownload(URL apk) {
         this.apk = apk;
+    }
+
+    public Boolean getForceUpgrade() {
+        return forceUpgrade;
+    }
+
+    public void setForceUpgrade(Boolean forceUpgrade) {
+        this.forceUpgrade = forceUpgrade;
     }
 }

@@ -2,6 +2,7 @@ package com.github.javiersantos.appupdater;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.support.annotation.Nullable;
 
 import com.github.javiersantos.appupdater.enums.AppUpdaterError;
 import com.github.javiersantos.appupdater.enums.UpdateFrom;
@@ -70,7 +71,7 @@ class UtilsAsync {
                         return update;
                     } else {
                         AppUpdaterError error = updateFrom == UpdateFrom.XML ? AppUpdaterError.XML_ERROR
-                                                                             : AppUpdaterError.JSON_ERROR;
+                                : AppUpdaterError.JSON_ERROR;
 
                         if (listener != null) {
                             listener.onFailed(error);
@@ -96,6 +97,8 @@ class UtilsAsync {
         @Override
         protected void onPostExecute(Update update) {
             super.onPostExecute(update);
+
+            UtilsCacheManager.setLastSyncUpdateResult(update);
 
             if (listener != null) {
                 if (UtilsLibrary.isStringAVersion(update.getLatestVersion())) {

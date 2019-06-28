@@ -1,6 +1,7 @@
 package com.github.javiersantos.appupdater.demo;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.net.Uri;
@@ -17,7 +18,69 @@ import com.github.javiersantos.appupdater.enums.Display;
 import com.github.javiersantos.appupdater.enums.UpdateFrom;
 
 public class MainActivity extends AppCompatActivity {
+
     private Context mContext;
+    private AppUpdater appUpdater;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        appUpdater = getAppUpdater();
+        if (appUpdater.isLocalUpdateAvailable()) {
+            boolean isLocalStarted = appUpdater.setUpdateFrom(UpdateFrom.JSON)
+                    .setUpdateJSON("https://raw.githubusercontent.com/javiersantos/AppUpdater/master/app/update-changelog.json")
+                    .setDisplay(Display.DIALOG)
+                    .showAppUpdated(true)
+                    .setButtonUpdateClickListener(new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+
+                        }
+                    })
+                    .startLocal();
+
+            if (!isLocalStarted) {
+                appUpdater.setUpdateFrom(UpdateFrom.JSON)
+                        .setUpdateJSON("https://raw.githubusercontent.com/javiersantos/AppUpdater/master/app/update-changelog.json")
+                        .setDisplay(Display.DIALOG)
+                        .showAppUpdated(true)
+                        .setButtonUpdateClickListener(new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                            }
+                        })
+                        .start();
+            }
+        } else {
+            appUpdater.setUpdateFrom(UpdateFrom.JSON)
+                    .setUpdateJSON("https://raw.githubusercontent.com/javiersantos/AppUpdater/master/app/update-changelog.json")
+                    .setDisplay(Display.DIALOG)
+                    .showAppUpdated(true)
+                    .setButtonUpdateClickListener(new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+
+                        }
+                    })
+                    .start();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        appUpdater.dismiss();
+        appUpdater = null;
+    }
+
+    private AppUpdater getAppUpdater() {
+        if (appUpdater == null) {
+            appUpdater = new AppUpdater(mContext);
+        }
+        return appUpdater;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
         ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         this.mContext = this;
         setSupportActionBar(binding.toolbar);
-		
+
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -36,14 +99,29 @@ public class MainActivity extends AppCompatActivity {
         binding.included.dialogUpdateChangelog.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new AppUpdater(mContext)
-                        //.setUpdateFrom(UpdateFrom.GITHUB)
-                        //.setGitHubUserAndRepo("javiersantos", "AppUpdater")
-                        .setUpdateFrom(UpdateFrom.JSON)
-                        .setUpdateJSON("https://raw.githubusercontent.com/javiersantos/AppUpdater/master/app/update-changelog.json")
-                        .setDisplay(Display.DIALOG)
-                        .showAppUpdated(true)
-                        .start();
+
+                AppUpdater appUpdater = new AppUpdater(mContext);
+                if (appUpdater.isLocalUpdateAvailable()) {
+                    boolean isLocalStarted = appUpdater.setUpdateFrom(UpdateFrom.JSON)
+                            .setUpdateJSON("https://raw.githubusercontent.com/javiersantos/AppUpdater/master/app/update-changelog.json")
+                            .setDisplay(Display.DIALOG)
+                            .showAppUpdated(true)
+                            .startLocal();
+
+                    if (!isLocalStarted) {
+                        appUpdater.setUpdateFrom(UpdateFrom.JSON)
+                                .setUpdateJSON("https://raw.githubusercontent.com/javiersantos/AppUpdater/master/app/update-changelog.json")
+                                .setDisplay(Display.DIALOG)
+                                .showAppUpdated(true)
+                                .start();
+                    }
+                } else {
+                    appUpdater.setUpdateFrom(UpdateFrom.JSON)
+                            .setUpdateJSON("https://raw.githubusercontent.com/javiersantos/AppUpdater/master/app/update-changelog.json")
+                            .setDisplay(Display.DIALOG)
+                            .showAppUpdated(true)
+                            .start();
+                }
             }
         });
 

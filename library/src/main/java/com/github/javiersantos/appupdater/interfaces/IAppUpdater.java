@@ -269,7 +269,7 @@ public interface IAppUpdater {
      *
      * @param textResource resource from the strings xml file for the dismiss button
      * @return this
-     * @deprecated  use {@link #setButtonDismiss(int)} instead
+     * @deprecated use {@link #setButtonDismiss(int)} instead
      */
     AppUpdater setDialogButtonDismiss(@StringRes int textResource);
 
@@ -360,10 +360,18 @@ public interface IAppUpdater {
     /**
      * Make update dialog non-cancelable, and
      * force user to make update
-     *  @param isCancelable true to force user to make update, false otherwise
-     *  @return this
+     *
+     * @param isCancelable true to force user to make update, false otherwise
+     * @return this
      */
     AppUpdater setCancelable(Boolean isCancelable);
+
+    /**
+     * To listen to update events
+     * @param libraryListener
+     * @return
+     */
+    AppUpdater setUpdateLibraryListener(UpdateLibraryListener libraryListener);
 
     /**
      * Execute AppUpdater in background.
@@ -388,9 +396,25 @@ public interface IAppUpdater {
      */
     void dismiss();
 
+    /**
+     * Local version of update available
+     */
+    boolean isLocalUpdateAvailable();
+
+    /**
+     * Start Processing Local Updater
+     */
+    boolean startLocal();
+
     interface LibraryListener {
         void onSuccess(Update update);
 
         void onFailed(AppUpdaterError error);
+    }
+
+    interface UpdateLibraryListener {
+        void onStart();
+
+        void onFinished();
     }
 }

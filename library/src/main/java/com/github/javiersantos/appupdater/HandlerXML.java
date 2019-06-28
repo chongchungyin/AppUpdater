@@ -43,6 +43,12 @@ class HandlerXML extends DefaultHandler {
                 } catch (MalformedURLException e) {
                     throw new RuntimeException(e);
                 }
+            } else if (localName.equals("forceUpgrade")) {
+                try {
+                    update.setForceUpgrade(Boolean.valueOf(builder.toString()));
+                } catch (Exception exp) {
+                    
+                }
             }
 
             builder.setLength(0);
